@@ -1,0 +1,27 @@
+# Validates the marketplace + every plugin on each PR and on main.
+# Mirrors the check the Anthropic community-marketplace review runs
+# (`claude plugin validate`), so nothing invalid can be merged or submitted.
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      # `claude plugin validate` is offline manifest/structure validation (no API
+      # auth needed). If a future CLI version requires auth here, add an
+      # ANTHROPIC_API_KEY secret and pass it through as an env var.
+      - name: Validate marketplace manifest
+        run: claude plugin validate .
+      - name: Validate ai-staff plugin
+        run: claude plugin validate ./ai-staff
