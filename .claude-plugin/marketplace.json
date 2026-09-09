@@ -1,0 +1,15 @@
+{
+  "name": "aipathway",
+  "description": "AI Pathway's plugin marketplace — AI Staff: named back-office agents that run in your Cowork.",
+  "owner": {
+    "name": "AI Pathway",
+    "url": "https://aipathway.co"
+  },
+  "plugins": [
+    {
+      "name": "ai-staff",
+      "source": "./ai-staff",
+      "description": "AI Pathway AI Staff — named back-office agents (starting with Vinnie the Vendor Bill Coder) that run in your Cowork. Requires the Mission Control and QuickBooks connectors."
+    }
+  ]
+}
