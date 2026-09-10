@@ -15,6 +15,8 @@ reinstalling anything.
   cost account, class), holding anything it can't code confidently.
 - **`ai-staff:agent-config`** — configure any agent's per-company settings
   (vendors, accounts, schedule, dry-run, email connections).
+- **`ai-staff:review-work-items`** — see what the agents held for your decision,
+  approve/reject in chat, and have approved items executed and audited immediately.
 
 ## Prerequisites (connect these first)
 This plugin does nothing on its own. Before using it, your Cowork must be
