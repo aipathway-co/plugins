@@ -1,0 +1,89 @@
+# Cuts the tag + GitHub release for a plugin when its manifest version changes
+# on main. PUBLISHING.md described these steps for a human to run; nobody ran
+# them for the review-work-items skill, so installs never saw it.
+#
+# Idempotent by design: the tag is the source of truth. If the version already
+# has a tag — i.e. this push did not actually change the plugin — the job says
+# so and exits without publishing anything.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ai-staff/**'
+      - '.claude-plugin/**'
+
+concurrency:
+  group: release-ai-staff
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Tag and release ai-staff
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read manifest version
+        id: manifest
+        run: |
+          VERSION=$(jq -r .version ai-staff/.claude-plugin/plugin.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=ai-staff-v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "ai-staff version $VERSION"
+
+      - name: Skip if this version is already released
+        id: check
+        run: |
+          if git rev-parse -q --verify "refs/tags/${{ steps.manifest.outputs.tag }}" >/dev/null; then
+            echo "already released — nothing to publish"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Validate before tagging: a release must never point at a manifest the
+      # CLI would reject, and this is the last gate before it is public.
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.release == 'true'
+        with:
+          node-version: "20"
+      - name: Validate marketplace and plugin
+        if: steps.check.outputs.release == 'true'
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate .
+          claude plugin validate ./ai-staff
+
+      - name: Tag and release
+        if: steps.check.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.manifest.outputs.tag }}
+          VERSION: ${{ steps.manifest.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          # Release notes: the commits that touched the plugin since the last
+          # ai-staff tag, so the notes describe the plugin, not the repo.
+          PREV=$(git tag --list 'ai-staff-v*' --sort=-v:refname | grep -v "^$TAG$" | head -1 || true)
+          if [[ -n "$PREV" ]]; then
+            NOTES=$(git log --no-merges --format='- %s' "$PREV..HEAD" -- ai-staff/ .claude-plugin/)
+          else
+            NOTES=$(git log --no-merges --format='- %s' -- ai-staff/ .claude-plugin/)
+          fi
+          [[ -n "$NOTES" ]] || NOTES="- Manifest update"
+
+          gh release create "$TAG" --title "ai-staff v$VERSION" --notes "$NOTES"
+          echo "released $TAG"

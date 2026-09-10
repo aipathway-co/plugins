@@ -25,3 +25,51 @@ jobs:
         run: claude plugin validate .
       - name: Validate ai-staff plugin
         run: claude plugin validate ./ai-staff
+
+  version-bump:
+    # A stub change that ships without a manifest bump is invisible to installs:
+    # `/plugin update` compares versions, sees the same 0.1.0, and never
+    # re-syncs. That happened with the review-work-items skill (#4), so the bump
+    # is a gate now, not a convention. Skipped on push (nothing to compare).
+    name: Plugin version bumped
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a bump when the plugin changed
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$BASE"
+          MERGE_BASE=$(git merge-base "origin/$BASE" HEAD)
+
+          # Requirement 3: if the plugin itself did not change, no release is
+          # needed and this gate stays out of the way.
+          if git diff --quiet "$MERGE_BASE" HEAD -- ai-staff/; then
+            echo "ai-staff/ unchanged — no version bump required."
+            exit 0
+          fi
+
+          MANIFEST=ai-staff/.claude-plugin/plugin.json
+          OLD=$(git show "$MERGE_BASE:$MANIFEST" | jq -r .version)
+          NEW=$(jq -r .version "$MANIFEST")
+          echo "ai-staff: $OLD -> $NEW"
+
+          if [[ "$OLD" == "$NEW" ]]; then
+            echo "::error file=$MANIFEST::ai-staff/ changed but version is still $OLD. Bump it (semver) so installed copies pick the change up — see PUBLISHING.md."
+            exit 1
+          fi
+
+          # Guard against going backwards, which would also strand installs.
+          if [[ "$(printf '%s\n%s\n' "$OLD" "$NEW" | sort -V | tail -1)" != "$NEW" ]]; then
+            echo "::error file=$MANIFEST::version $NEW is not greater than $OLD."
+            exit 1
+          fi
+
+          if git rev-parse -q --verify "refs/tags/ai-staff-v$NEW" >/dev/null; then
+            echo "::error file=$MANIFEST::tag ai-staff-v$NEW already exists; pick an unused version."
+            exit 1
+          fi

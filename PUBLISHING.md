@@ -24,17 +24,21 @@ claude plugin validate .            # the marketplace manifest
 claude plugin validate ./ai-staff   # the plugin
 ```
 
-## Cutting a release
+## Cutting a release (automated)
 
 1. Bump the version in the changed plugin's manifest
    (`ai-staff/.claude-plugin/plugin.json` → `"version"`), following semver.
+   **CI fails the PR if you changed `ai-staff/` without bumping it** — an
+   unbumped change is invisible to installs, because `/plugin update` compares
+   versions and sees no difference.
 2. Merge to `main`.
-3. Tag and create a GitHub release:
-   ```
-   git tag ai-staff-vX.Y.Z && git push origin ai-staff-vX.Y.Z
-   gh release create ai-staff-vX.Y.Z --title "ai-staff vX.Y.Z" --notes "…"
-   ```
-   Installs pick up the new version on the next marketplace refresh.
+3. Nothing. `.github/workflows/release.yml` validates the manifests, then
+   creates the `ai-staff-vX.Y.Z` tag and the GitHub release automatically.
+   It is idempotent: if the version already has a tag (i.e. the push did not
+   change the plugin), it exits without releasing.
+
+Installs pick up the new version on the next marketplace refresh
+(`/plugin marketplace update aipathway` then `/plugin update ai-staff`).
 
 > Note: because each agent's *method* is served from Mission Control (not shipped
 > here), you rarely need a plugin release — only when a stub, the manifest, or a
