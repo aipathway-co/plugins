@@ -32,9 +32,11 @@ or "Vinnie"). If the user didn't name one, ask which agent.
 - Map the name to an `agent_key` (e.g. "Vinnie" → `vinnie-vendor-bill-coder`).
 - Call **`describe_agent_config`** with that `agent_key`. In ONE call it returns
   everything you need:
-  - `firstClassFields` — the cross-agent fields (enabled, `dry_run`, schedule,
-    timezone, email_connections) with types and descriptions. (Agents always run
-    the current skill version — there is no version to configure.)
+  - `firstClassFields` — the cross-agent fields (enabled, `dry_run`,
+    email_connections) with types and descriptions. (Agents always run the current
+    skill version — there is no version to configure. **When an agent runs** is not
+    configured here either — that is `/configure-scheduled-task`, which registers the
+    cadence with the scheduler on this computer.)
   - `configSchema` — a JSON Schema for the agent-specific `config`: every field's
     name, type, allowed values, and description. This is authoritative — use it
     to know exactly what you may set; do not invent fields.
@@ -77,4 +79,5 @@ anything on its next run.
   account, or connection id, ask — do not guess.
 - Turning `dry_run` off or `enabled` on means the agent can write to real systems
   on its next run. Confirm that's intended before doing it.
-- You only configure agents here; you do not run them.
+- You only configure agents here; you do not run them and you do not schedule them
+  (that is `/configure-scheduled-task`).
