@@ -14,7 +14,10 @@ reinstalling anything.
   inbox and turns them into correctly coded QuickBooks bills (right vendor, job,
   cost account, class), holding anything it can't code confidently.
 - **`ai-staff:agent-config`** — configure any agent's per-company settings
-  (vendors, accounts, schedule, dry-run, email connections).
+  (vendors, accounts, dry-run, email connections).
+- **`ai-staff:configure-scheduled-task`** — put an agent on a recurring schedule so
+  it runs unattended, change or pause an existing schedule, and check whether any
+  scheduled task has fallen behind.
 - **`ai-staff:review-work-items`** — see what the agents held for your decision,
   approve/reject in chat, and have approved items executed and audited immediately.
 
@@ -40,7 +43,10 @@ you they can't run — by design.
    ```
    New configs start in **dry-run** (the agent analyzes and reports but writes
    nothing) — review a dry run before turning it live.
-3. Run it (`run vinnie`), or schedule it in Cowork.
+3. Run it (`run vinnie`), or put it on a schedule:
+   ```
+   /configure-scheduled-task vinnie
+   ```
 
 ## Safety model
 - **Dry-run by default** — no agent writes to QuickBooks or sends email until you
@@ -48,6 +54,10 @@ you they can't run — by design.
 - **Fail closed** — if an agent can't load its method or verify entitlement, it
   stops rather than guessing.
 - **Audited** — every write an agent makes is recorded in Mission Control.
+- **Scheduled runs are unattended** — nobody is present to approve anything, so a
+  scheduled run leaves decisions as work items for `/review-work-items` instead of
+  acting on them. An agent that is switched off, unconfigured, or missing its mailbox
+  will not be scheduled in the first place.
 
 ---
 © AI Pathway. The agent stubs here are open; the methods they run and the Mission
