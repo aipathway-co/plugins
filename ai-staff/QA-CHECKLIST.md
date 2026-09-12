@@ -62,6 +62,17 @@ Record the result (pass / fail / n-a) and the plugin version next to each run.
 - [ ] No longer offers `schedule` or `timezone`, and points scheduling at
       `/configure-scheduled-task`.
 
+## `cfo-financial-analysis`
+- [ ] A financial-analysis request calls `prepare_financial_analysis` with the
+      user request as `query` and `response_format: "financial_analysis"`.
+- [ ] A plan or roadmap request uses only `response_format: "30_60_90_plan"`.
+- [ ] The stub follows `dataGatheringMethod`, retrieves only required data through
+      approved MCP tools, then follows `finalAnalysisMethod` and the selected
+      financial guidance.
+- [ ] Missing or unavailable preparation, required data, or approved MCP tools
+      stops the run without invented financial conclusions.
+- [ ] The stub never calls `get_skill` for CFO financial analysis.
+
 ## Release mechanics
 - [ ] `ai-staff/.claude-plugin/plugin.json` version bumped (CI fails without it).
 - [ ] The Mission Control deploy carrying any new tool is **already live** — the stubs call

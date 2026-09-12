@@ -1,11 +1,11 @@
 {
   "name": "ai-staff",
   "description": "AI Pathway AI Staff — named back-office agents (starting with Vinnie the Vendor Bill Coder) that run in your Cowork. Each agent is a thin skill that fetches its authoritative, versioned method from the Mission Control connector at run time. Requires the Mission Control and QuickBooks connectors.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": {
     "name": "AI Pathway",
     "url": "https://aipathway.co"
   },
   "homepage": "https://aipathway.co",
-  "keywords": ["aipathway", "ai-staff", "accounting", "quickbooks", "bookkeeping", "accounts-payable"]
+  "keywords": ["aipathway", "ai-staff", "accounting", "quickbooks", "bookkeeping", "accounts-payable", "finance", "cfo", "financial-analysis"]
 }
