@@ -33,7 +33,7 @@ or any named-agent skill operation for this task.
    from `profitability`, `cash_liquidity`, `project_labor`, and `cogs`. Omit
    `focus` when none applies. Do not add financial-domain selection rules here.
 4. Pass `accounting_basis` only when known, as `Cash` or `Accrual`; otherwise
-   omit it and follow the returned basis probe.
+   omit it and follow the returned basis-discovery instructions.
 5. Call the dedicated Mission Control MCP operation
    **`prepare_financial_analysis`** with `query`, `response_format`, and the
    applicable optional inputs.
@@ -50,24 +50,32 @@ provide financial conclusions.
 
 - Treat `phases.data_gathering`, `phases.final_analysis`, and
   `selected_guidance_modules` as the only method and guidance sources.
-- For each `required_data` entry, use its exact structured fields: `{item, tool,
-  params}`. Invoke only the named approved MCP `tool`, using `params`; do not
-  substitute another tool or source.
-- **STOP only** when a required-data item's named approved MCP tool is available
-  and that tool invocation fails. State the failed required item and tool, and do
-  not provide financial conclusions.
+- Determine the reporting period and comparison period, if any, from the user's
+  request. If none is stated, use the most recent complete month. State that
+  default in **Scope, basis, and period**, or in **Data gaps and assumptions**
+  for a 30/60/90 plan.
+- Retrieve each `required_data` item using the available connected tools. Do not
+  require a tool name or parameters from another MCP server.
+- **STOP** if any required-data item cannot be retrieved because no suitable tool
+  is connected or retrieval fails. State which item could not be retrieved and
+  provide no financial conclusions.
 - Treat `optional_data` entries as optional. If an optional-data retrieval fails
   or is unavailable, continue and include that item in **Data gaps and
   assumptions**; it must not stop the run.
+- If `accounting_basis` was omitted and the balance sheet identifies the company's
+  default accounting basis, call `prepare_financial_analysis` again with the
+  discovered `accounting_basis` before final analysis. Apply the hard circuit
+  breaker to the new preparation result and then follow its returned method.
 - Follow `phases.final_analysis` and `selected_guidance_modules` exactly after
   preparation and data gathering.
-- Return only the returned `response_contract`. Do not add a parallel analysis,
-  conclusions, recommendations, plan, or formatting outside that contract.
+- Structure the response using `response_contract` sections and rules. Do not add
+  a parallel analysis, conclusions, recommendations, plan, or formatting outside
+  that contract.
 
 ## Guardrails
 
 - Mission Control supplies the method, guidance, data requirements, and response
   contract; this plugin contains none of them.
+- Read-only: never write to an accounting system.
 - Never use named-agent `get_skill` as a fallback or substitute.
-- Never invent, estimate, or fill gaps in financial data, analysis, conclusions,
-  recommendations, or a plan.
+- Never invent data. Label any estimates, projections, or assumptions.

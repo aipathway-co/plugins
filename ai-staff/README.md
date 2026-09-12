@@ -21,8 +21,8 @@ reinstalling anything.
 - **`ai-staff:review-work-items`** — see what the agents held for your decision,
   approve/reject in chat, and have approved items executed and audited immediately.
 - **`ai-staff:cfo-financial-analysis`** — prepares a financial analysis, or a
-  30/60/90 financial plan when requested, through Mission Control's authoritative
-  CFO-analysis method.
+  30/60/90 financial plan when requested, using Mission Control's financial
+  analysis preparation.
 
 ## Prerequisites (connect these first)
 This plugin does nothing on its own. Before using it, your Cowork must be
