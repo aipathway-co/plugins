@@ -63,14 +63,47 @@ Record the result (pass / fail / n-a) and the plugin version next to each run.
       `/configure-scheduled-task`.
 
 ## `cfo-financial-analysis`
+
+**Request shaping**
 - [ ] A financial-analysis request calls `prepare_financial_analysis` with the
       user request as `query` and `response_format: "financial_analysis"`.
-- [ ] A plan or roadmap request uses only `response_format: "30_60_90_plan"`.
-- [ ] The stub follows `dataGatheringMethod`, retrieves only required data through
-      approved MCP tools, then follows `finalAnalysisMethod` and the selected
-      financial guidance.
-- [ ] Missing or unavailable preparation, required data, or approved MCP tools
-      stops the run without invented financial conclusions.
+- [ ] Only an explicit plan or roadmap request uses
+      `response_format: "30_60_90_plan"`; e.g., “analyze our cash position” is
+      `financial_analysis`, while “give me a 90-day cash-improvement roadmap” is
+      `30_60_90_plan`.
+- [ ] The caller infers `focus` from the request and passes only applicable enum
+      values: `profitability`, `cash_liquidity`, `project_labor`, or `cogs`.
+      It adds no domain selection rules and omits `focus` when none applies.
+- [ ] `accounting_basis` is passed only as `Cash` or `Accrual` when known;
+      otherwise it is omitted and the returned basis probe is followed.
+
+**Mission Control response contract and dry read**
+- [ ] Run a dry-read against the live `prepare_financial_analysis` MCP tool with
+      a non-destructive financial-analysis query and record the unmodified tool
+      response with the plugin version.
+- [ ] From that real response, verify that every field referenced by the stub
+      exists and is usable: `phases.data_gathering`, `phases.final_analysis`,
+      `selected_guidance_modules`, `required_data` entries with `{item, tool,
+      params}`, `optional_data`, and `response_contract` (plus the basis probe
+      when `accounting_basis` was omitted).
+- [ ] Confirm the healthy dry-read response has usable non-empty phases and
+      selected guidance, so no preparation STOP condition applies. If any field
+      is absent or unusable, mark the check failed; do not waive it by inventing
+      a response shape.
+
+**Execution and failure handling**
+- [ ] The stub follows only `phases.data_gathering`, `phases.final_analysis`, and
+      `selected_guidance_modules`, and returns only `response_contract`.
+- [ ] Each required-data retrieval invokes only its named approved MCP `tool`
+      with its supplied `params`; no substitute tool or source is used.
+- [ ] A required-data item stops the run only when its named approved MCP tool is
+      available and its invocation fails; the result identifies the failed item
+      and tool and contains no financial conclusions.
+- [ ] Optional-data failures or unavailable optional-data tools continue the run
+      and appear in **Data gaps and assumptions**; they do not stop the run.
+- [ ] Preparation failure or unavailability, or any missing/unusable required
+      top-level method field (`phases.data_gathering`, `phases.final_analysis`,
+      `selected_guidance_modules`), stops the run with no financial conclusions.
 - [ ] The stub never calls `get_skill` for CFO financial analysis.
 
 ## Release mechanics
