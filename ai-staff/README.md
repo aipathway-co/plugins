@@ -11,15 +11,18 @@ reinstalling anything.
 
 ## What's included
 - **`ai-staff:vinnie-vendor-bill-coder`** — reads supplier invoices from your AP
-  inbox and turns them into correctly coded QuickBooks bills (right vendor, job,
-  cost account, class), holding anything it can't code confidently.
-- **`ai-staff:agent-config`** — configure any agent's per-company settings
-  (vendors, accounts, dry-run, email connections).
+  inbox and suggests a correctly coded QuickBooks bill for each (right vendor,
+  job, cost account, class). Nothing is added until a person says yes.
+- **`ai-staff:teach-vinnie`** — set Vinnie up and teach him how your company
+  codes bills (suppliers, jobs, accounts); ask what he knows.
+- **`ai-staff:agent-config`** — how an agent operates: on/off, practice mode,
+  mailbox, QuickBooks company, summary delivery. Never vendors or jobs.
 - **`ai-staff:configure-scheduled-task`** — put an agent on a recurring schedule so
   it runs unattended, change or pause an existing schedule, and check whether any
   scheduled task has fallen behind.
-- **`ai-staff:review-work-items`** — see what the agents held for your decision,
-  approve/reject in chat, and have approved items executed and audited immediately.
+- **`ai-staff:review-work-items`** — accept, reject or correct the agents'
+  suggestions in chat; accepted bills are added and audited immediately, and
+  corrections teach the agent.
 - **`ai-staff:cfo-financial-analysis`** — prepares a financial analysis, or a
   30/60/90 financial plan when requested, using Mission Control's financial
   analysis preparation.
@@ -28,7 +31,8 @@ reinstalling anything.
 This plugin does nothing on its own. Before using it, your Cowork must be
 connected to the two AI Pathway connectors, set up through your AI Pathway
 onboarding:
-1. **Mission Control** — serves each agent's method and holds config + audit.
+1. **Mission Control** — serves each agent's method and holds its settings,
+   what it has been taught, and the audit.
 2. **QuickBooks** — where bills are read and created.
 
 Without both connected (and an active subscription), the agents will stop and tell
@@ -40,20 +44,23 @@ you they can't run — by design.
    /plugin marketplace add aipathway-co/plugins
    /plugin install ai-staff
    ```
-2. Configure an agent:
+2. Set up and teach Vinnie (one session with your bookkeeper):
    ```
-   /agent-config vinnie-vendor-bill-coder
+   teach vinnie
    ```
-   New configs start in **dry-run** (the agent analyzes and reports but writes
-   nothing) — review a dry run before turning it live.
+   Vinnie starts in **practice mode**: he suggests bills but adds nothing.
+   When his suggestions look right, take him out of practice mode with
+   `/agent-config`.
 3. Run it (`run vinnie`), or put it on a schedule:
    ```
    /configure-scheduled-task vinnie
    ```
 
 ## Safety model
-- **Dry-run by default** — no agent writes to QuickBooks or sends email until you
-  deliberately turn dry-run off.
+- **Nothing is added without a yes** — every bill is a suggestion a person
+  accepts, rejects or corrects.
+- **Practice mode by default** — no agent writes to QuickBooks or sends email
+  until you deliberately turn practice mode off.
 - **Fail closed** — if an agent can't load its method or verify entitlement, it
   stops rather than guessing.
 - **Audited** — every write an agent makes is recorded in Mission Control.

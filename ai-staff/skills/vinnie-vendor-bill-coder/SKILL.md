@@ -27,9 +27,9 @@ company. You MUST fetch it and follow it exactly.
 ## What to do
 
 1. Call the Mission Control tool **`get_skill`** with `agent_key: "vinnie-vendor-bill-coder"`.
-2. Follow the returned `body` exactly — it is the current (or this company's
-   pinned) version of Vinnie's method. It will tell you to load this company's
-   configuration (`get_agent_config`) and will honor the `dry_run` switch.
+2. Follow the returned `body` exactly — it is the current version of Vinnie's
+   method. It will tell you to load this company's settings and what Vinnie has
+   been taught, and it honors practice mode.
 
 ## If you cannot get the skill — STOP
 
@@ -39,6 +39,6 @@ improvise a procedure, do NOT guess how to code or post bills, and do NOT write
 anything to QuickBooks or send any email from this stub. A missing skill means no
 run — never a best-effort run.
 
-Everything about *how* Vinnie works — which vendors to expect, how to code lines,
-how to match jobs, dedup, thresholds — lives in the fetched skill and in this
-company's configuration, never in this stub.
+Everything about *how* Vinnie works lives in the fetched method. Everything about
+*this company* — its suppliers, jobs and accounts — is what Vinnie was taught
+(`teach-vinnie`), never this stub.
