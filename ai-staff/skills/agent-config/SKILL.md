@@ -35,7 +35,7 @@ Call **`get_agent_settings`** with the `agent_key`. Show, in plain words:
 - on or off (`enabled`)
 - practice mode (`dryRun`): true means the agent suggests but never adds
   anything to QuickBooks
-- the mailbox it reads (by address or label from `availableEmailConnections`,
+- the mailbox it reads (by address or label from `available_email_connections`,
   never by id)
 - the QuickBooks company it is locked to (`expectedCompanyName`), if set
 - how many days back it looks (`lookbackDays`) and where its summary goes
@@ -48,7 +48,7 @@ sets these up first and then teaches.
 
 Call **`update_agent_settings`** with only the fields being changed:
 `enabled`, `dry_run`, `email_connections` (ids from
-`availableEmailConnections` — never guessed), and `settings`
+`available_email_connections` — never guessed), and `settings`
 (`lookbackDays`, `summaryDelivery`, `summaryEmail`, `expectedCompanyName`,
 `expectedRealmId`).
 
