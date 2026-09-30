@@ -41,7 +41,7 @@ Call **`get_agent_settings`** with the `agent_key`. Show, in plain words:
 - how many days back it looks (`lookbackDays`) and where its summary goes
   (`summaryDelivery`, `summaryEmail`)
 
-If it returns null, the agent was never set up: offer `teach-vinnie`, which
+If it returns `configured: false`, the agent was never set up: offer `teach-vinnie`, which
 sets these up first and then teaches.
 
 ## Step 2 — Change only what they asked
