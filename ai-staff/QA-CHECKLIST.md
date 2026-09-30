@@ -21,8 +21,9 @@ Record the result (pass / fail / n-a) and the plugin version next to each run.
 - [ ] A bare nickname ("schedule Dana") resolves to the right `agent_key`.
 - [ ] An ambiguous or unknown name asks rather than guessing.
 
-**Blockers (each should create NOTHING and hand off to `/agent-config`)**
-- [ ] Never-configured agent.
+**Blockers (each should create NOTHING and hand off to `/agent-config` or `teach-vinnie`)**
+- [ ] Never-set-up agent.
+- [ ] Agent not taught yet (teaching import not finished) → hands off to `teach-vinnie`.
 - [ ] `enabled: false`.
 - [ ] Agent whose `usesEmail` is true with no bound mailbox.
 - [ ] Agent with no published skill version, or a pin at a version that no longer resolves.
@@ -59,8 +60,30 @@ Record the result (pass / fail / n-a) and the plugin version next to each run.
       to re-enable or delete.
 
 ## `/agent-config`
-- [ ] No longer offers `schedule` or `timezone`, and points scheduling at
-      `/configure-scheduled-task`.
+- [ ] Shows only on/off, practice mode, mailbox (by address, never id), QuickBooks
+      company, look-back days and summary delivery.
+- [ ] Asked to add a vendor, job, account or sender: refuses and offers `teach-vinnie`
+      (Mission Control also refuses the key).
+- [ ] Changing an already-set QuickBooks company is refused and explained.
+- [ ] Turning practice mode off asks for confirmation first.
+
+## `teach-vinnie`
+- [ ] Calls `get_skill` with `procedure: "teach"` and follows the body; if it cannot
+      be loaded it STOPS and saves nothing.
+- [ ] First session: confirms the QuickBooks company, brings the old settings over as
+      teach cards (nothing saved until confirmed), lists rules it could not bring over
+      in plain words.
+- [ ] "What does Vinnie know?" answers from `get_knowledge`, grouped by supplier and job.
+
+## `/review-work-items`
+- [ ] Shows three groups with exact counts; invoices show title, amount, summary only.
+- [ ] Every decision carries the item's revision and a fresh decision id; a "changed
+      since you looked" refusal shows the new version and asks again.
+- [ ] "Wrong job" becomes an approve with a correction (live) or an answer with a
+      correction (practice mode); it never calls `remember`.
+- [ ] Execution starts with `claim_execution`; a second chat trying the same bill is told
+      another chat already started it.
+- [ ] `next: "recode"` brings the invoice back updated before it can be accepted.
 
 ## `cfo-financial-analysis`
 

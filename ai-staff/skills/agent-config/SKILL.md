@@ -1,83 +1,71 @@
 ---
 name: agent-config
 description: >
-  Configure a named agent's per-company settings in Mission Control — which
-  vendors/accounts/jobs/schedule it uses, whether it runs in dry-run, and which
-  email connections it may read. Use when someone wants to set up, configure,
-  review, enable/disable, schedule, or turn dry-run on/off for a named agent
-  (e.g. "configure Vinnie", "set up the vendor bill coder", "put Dana in
-  dry-run", "what is Vinnie's config"). Works for ANY agent by key/name.
+  Change how a named agent OPERATES for this company: turn it on or off, put it
+  in or take it out of practice mode (dry run), choose which mailbox it reads,
+  confirm which QuickBooks company it works in, how many days back it looks,
+  and where its run summary goes. Use for "turn Vinnie on", "take Vinnie out of
+  practice mode", "change Vinnie's mailbox", "what are Vinnie's settings".
+  NOT for vendors, jobs, accounts, classes or senders — those are TAUGHT, not
+  configured: use teach-vinnie.
 triggers:
-  - "configure agent"
-  - "agent config"
-  - "set up <agent>"
-  - "configure <agent>"
-  - "review <agent> config"
-  - "enable <agent>"
-  - "put <agent> in dry run"
+  - "agent settings"
+  - "turn <agent> on"
+  - "turn <agent> off"
+  - "put <agent> in practice mode"
+  - "take <agent> out of practice mode"
+  - "change <agent>'s mailbox"
+  - "what are <agent>'s settings"
 ---
 
-# /agent-config — configure a named agent (per-company data)
+# /agent-config — how an agent operates (settings only)
 
-This skill sets the **per-company DATA** an agent needs. It does not change the
-agent's **method** (that is the versioned skill served by Mission Control). Think:
-this fills in *this company's* vendors, accounts, jobs, schedule, and switches —
-the method stays the same for everyone.
+Settings say how an agent **operates**. They never say how the company **codes
+bills**. Anything that names a supplier, account, class, job, PO, ship-to or
+sender is knowledge: the agent learns it from a person through `teach-vinnie`
+and through the bookkeeper's answers and corrections. Mission Control refuses
+those keys here; do not try to put them in.
 
-**Input:** the agent to configure, by key or name (e.g. `vinnie-vendor-bill-coder`
-or "Vinnie"). If the user didn't name one, ask which agent.
+**Input:** the agent, by key or name ("Vinnie" → `vinnie-vendor-bill-coder`).
+If none was named or it is ambiguous, call `list_agents` and ask.
 
-## Step 1 — Describe the agent and show current config
+## Step 1 — Show the current settings
 
-- Map the name to an `agent_key` (e.g. "Vinnie" → `vinnie-vendor-bill-coder`).
-- Call **`describe_agent_config`** with that `agent_key`. In ONE call it returns
-  everything you need:
-  - `firstClassFields` — the cross-agent fields (enabled, `dry_run`,
-    email_connections) with types and descriptions. (Agents always run the current
-    skill version — there is no version to configure. **When an agent runs** is not
-    configured here either — that is `/configure-scheduled-task`, which registers the
-    cadence with the scheduler on this computer.)
-  - `configSchema` — a JSON Schema for the agent-specific `config`: every field's
-    name, type, allowed values, and description. This is authoritative — use it
-    to know exactly what you may set; do not invent fields.
-  - `configDefaults` — the defaults applied when a field is unset.
-  - `current` — this company's current values, or null if never configured.
-- Present the current state to the user (or "not configured yet"), and clearly
-  state **`dry_run`** (true = performs no external writes) and `enabled`.
+Call **`get_agent_settings`** with the `agent_key`. Show, in plain words:
+- on or off (`enabled`)
+- practice mode (`dryRun`): true means the agent suggests but never adds
+  anything to QuickBooks
+- the mailbox it reads (by address or label from `available_email_connections`,
+  never by id)
+- the QuickBooks company it is locked to (`expectedCompanyName`), if set
+- how many days back it looks (`lookbackDays`) and where its summary goes
+  (`summaryDelivery`, `summaryEmail`)
 
-## Step 2 — Collect the changes
+If it returns `configured: false`, the agent was never set up: offer `teach-vinnie`, which
+sets these up first and then teaches.
 
-From `describe_agent_config`, walk the user through the fields that need setting or
-changing. Only touch what they ask for. Note especially:
-- `dry_run` — **defaults to true**; keep it true until the user has reviewed dry
-  runs and explicitly wants live writes. Confirm before turning it off.
-- `email_connections` — connection id(s) the agent may read; the user provides
-  ids the company already owns.
-- the agent-specific `config` — set exactly the fields the returned
-  `configSchema` defines (e.g. for Vinnie: `searchQuery`, `vendors`, `jobAliases`,
-  `roster`, thresholds).
+## Step 2 — Change only what they asked
 
-## Step 3 — Apply with `upsert_agent_config`
+Call **`update_agent_settings`** with only the fields being changed:
+`enabled`, `dry_run`, `email_connections` (ids from
+`available_email_connections` — never guessed), and `settings`
+(`lookbackDays`, `summaryDelivery`, `summaryEmail`, `expectedCompanyName`,
+`expectedRealmId`).
 
-- Call `upsert_agent_config` with the `agent_key` and only the fields being
-  changed (it merges over existing values; `config` is merged then fully
-  re-validated).
-- If it returns a structured error (`isError` with `issues`), show the specific
-  validation problems in plain language and correct them with the user — do not
-  loop blindly. Common causes: an unknown field, a value out of range, a
-  non-IANA timezone, or an `email_connections` id the company does not own
-  (ownership is verified server-side and fails closed).
+- **Practice mode off** or **turning the agent on** means real changes in
+  QuickBooks once a person accepts a suggestion. Confirm that is intended.
+- The QuickBooks company can be set once and is then locked. If Mission Control
+  refuses a change to it, say so plainly: moving an agent to a different
+  QuickBooks company is done by AI Pathway, not here.
+- If Mission Control refuses a key because it is knowledge (a vendor, job,
+  account…), explain that and offer `teach-vinnie`.
 
-## Step 4 — Confirm
+## Step 3 — Confirm
 
-Read back the resulting config (from the tool's return), and explicitly restate
-**dry-run and enabled** so the user knows whether the agent will actually write
-anything on its next run.
+Read back what the tool returned, and restate **on/off and practice mode** so
+the person knows whether anything can be added to QuickBooks.
 
 ## Guardrails
-- Never invent config values. If you don't know a company's vendor id, GL
-  account, or connection id, ask — do not guess.
-- Turning `dry_run` off or `enabled` on means the agent can write to real systems
-  on its next run. Confirm that's intended before doing it.
-- You only configure agents here; you do not run them and you do not schedule them
-  (that is `/configure-scheduled-task`).
+- Never invent a value or an id. Ask.
+- You do not teach, run or schedule agents here (`teach-vinnie`, "run vinnie",
+  `/configure-scheduled-task`).
