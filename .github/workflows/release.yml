@@ -1,31 +1,84 @@
-# Cuts the tag + GitHub release for a plugin when its manifest version changes
-# on main. PUBLISHING.md described these steps for a human to run; nobody ran
-# them for the review-work-items skill, so installs never saw it.
+# Cuts the tag + GitHub release for each plugin in the marketplace when its
+# manifest version changes on main. PUBLISHING.md described these steps for a
+# human to run; nobody ran them for the review-work-items skill, so installs
+# never saw it.
 #
-# Idempotent by design: the tag is the source of truth. If the version already
-# has a tag — i.e. this push did not actually change the plugin — the job says
-# so and exits without publishing anything.
+# One plugin per industry: the `plugins` job reads the plugin directories from
+# .claude-plugin/marketplace.json, and the `release` job runs once per plugin
+# (a matrix). Each plugin is tagged `<plugin>-vX.Y.Z` from the version in
+# <plugin>/.claude-plugin/plugin.json, so versions move independently
+# (e.g. ai-staff-v0.7.0, ai-staff-lending-v0.1.0). Adding a plugin to the
+# marketplace is enough to get it released; no change is needed here as long as
+# its directory is named `ai-staff*` (the push filter below).
+#
+# Idempotent by design: the tag is the source of truth. If a plugin's version
+# already has a tag — i.e. this push did not actually change that plugin — its
+# job says so and exits without publishing anything. A push that touches one
+# plugin therefore releases only that plugin.
 name: Release
 
 on:
   push:
     branches: [main]
     paths:
-      - 'ai-staff/**'
+      - 'ai-staff*/**'
       - '.claude-plugin/**'
-
-concurrency:
-  group: release-ai-staff
-  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
+  plugins:
+    name: List plugins
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    outputs:
+      plugins: ${{ steps.list.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The marketplace is the list of plugins. Each source must be a plain
+      # directory name at the repo root (it ends up in tag names and paths)
+      # named ai-staff or ai-staff-<industry> (anything else would never match
+      # the push filter above, so it would silently never release), and must
+      # actually contain a manifest. Duplicate entries collapse to one job.
+      - name: List plugin directories from the marketplace
+        id: list
+        run: |
+          set -euo pipefail
+          SOURCES=$(jq -r '[.plugins[].source | sub("^\\./"; "")] | unique | .[]' .claude-plugin/marketplace.json)
+          if [[ -z "$SOURCES" ]]; then
+            echo "::error::.claude-plugin/marketplace.json lists no plugins"
+            exit 1
+          fi
+          while IFS= read -r DIR; do
+            if [[ ! "$DIR" =~ ^ai-staff(-[a-z0-9]+)*$ ]]; then
+              echo "::error::plugin source '$DIR' must be ./ai-staff or ./ai-staff-<industry> (lowercase letters, digits, hyphens); other names are outside this workflow's push filter"
+              exit 1
+            fi
+            if [[ ! -f "$DIR/.claude-plugin/plugin.json" ]]; then
+              echo "::error::$DIR/.claude-plugin/plugin.json is missing"
+              exit 1
+            fi
+          done <<< "$SOURCES"
+          PLUGINS=$(printf '%s\n' "$SOURCES" | jq -R . | jq -sc .)
+          echo "plugins=$PLUGINS" >> "$GITHUB_OUTPUT"
+          echo "plugins: $PLUGINS"
+
   release:
-    name: Tag and release ai-staff
+    name: Tag and release ${{ matrix.plugin }}
+    needs: plugins
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJSON(needs.plugins.outputs.plugins) }}
+    concurrency:
+      group: release-${{ matrix.plugin }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,16 +86,24 @@ jobs:
 
       - name: Read manifest version
         id: manifest
+        env:
+          PLUGIN: ${{ matrix.plugin }}
         run: |
-          VERSION=$(jq -r .version ai-staff/.claude-plugin/plugin.json)
+          VERSION=$(jq -r .version "$PLUGIN/.claude-plugin/plugin.json")
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error file=$PLUGIN/.claude-plugin/plugin.json::version '$VERSION' is not X.Y.Z"
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=ai-staff-v$VERSION" >> "$GITHUB_OUTPUT"
-          echo "ai-staff version $VERSION"
+          echo "tag=$PLUGIN-v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "$PLUGIN version $VERSION"
 
       - name: Skip if this version is already released
         id: check
+        env:
+          TAG: ${{ steps.manifest.outputs.tag }}
         run: |
-          if git rev-parse -q --verify "refs/tags/${{ steps.manifest.outputs.tag }}" >/dev/null; then
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             echo "already released — nothing to publish"
             echo "release=false" >> "$GITHUB_OUTPUT"
           else
@@ -57,15 +118,18 @@ jobs:
           node-version: "20"
       - name: Validate marketplace and plugin
         if: steps.check.outputs.release == 'true'
+        env:
+          PLUGIN: ${{ matrix.plugin }}
         run: |
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .
-          claude plugin validate ./ai-staff
+          claude plugin validate "./$PLUGIN"
 
       - name: Tag and release
         if: steps.check.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          PLUGIN: ${{ matrix.plugin }}
           TAG: ${{ steps.manifest.outputs.tag }}
           VERSION: ${{ steps.manifest.outputs.version }}
         run: |
@@ -76,14 +140,17 @@ jobs:
           git push origin "$TAG"
 
           # Release notes: the commits that touched the plugin since the last
-          # ai-staff tag, so the notes describe the plugin, not the repo.
-          PREV=$(git tag --list 'ai-staff-v*' --sort=-v:refname | grep -v "^$TAG$" | head -1 || true)
+          # tag of THIS plugin, so the notes describe the plugin, not the repo.
+          # The regex needs a digit right after "<plugin>-v", so a plugin whose
+          # name extends this one (ai-staff vs ai-staff-lending) never matches,
+          # and is anchored at the end so a pre-release tag is never "previous".
+          PREV=$(git tag --list --sort=-v:refname | grep -E "^${PLUGIN}-v[0-9]+\.[0-9]+\.[0-9]+\$" | grep -vxF -- "$TAG" | head -1 || true)
           if [[ -n "$PREV" ]]; then
-            NOTES=$(git log --no-merges --format='- %s' "$PREV..HEAD" -- ai-staff/ .claude-plugin/)
+            NOTES=$(git log --no-merges --format='- %s' "$PREV..HEAD" -- "$PLUGIN/" .claude-plugin/)
           else
-            NOTES=$(git log --no-merges --format='- %s' -- ai-staff/ .claude-plugin/)
+            NOTES=$(git log --no-merges --format='- %s' -- "$PLUGIN/" .claude-plugin/)
           fi
           [[ -n "$NOTES" ]] || NOTES="- Manifest update"
 
-          gh release create "$TAG" --title "ai-staff v$VERSION" --notes "$NOTES"
+          gh release create "$TAG" --title "$PLUGIN v$VERSION" --notes "$NOTES"
           echo "released $TAG"

@@ -1,7 +1,7 @@
 # AI Pathway plugins
 
 Claude plugins that run your business. This repo is a **plugin marketplace** — add
-it in Claude Code or Cowork and install the plugins below.
+it in Claude Code or Cowork and install the plugin for your industry.
 
 ```
 /plugin marketplace add aipathway-co/plugins
@@ -10,9 +10,25 @@ it in Claude Code or Cowork and install the plugins below.
 
 ## Plugins
 
-| Plugin | What it is |
-|--------|------------|
-| **[`ai-staff`](./ai-staff)** | Named back-office agents (starting with **Vinnie the Vendor Bill Coder**) that run in your Cowork. |
+This marketplace carries one plugin per industry. Install the one for your
+company's industry.
+
+| Plugin | Industry | What it is |
+|--------|----------|------------|
+| **[`ai-staff`](./ai-staff)** | Trades | Named back-office agents (starting with **Vinnie the Vendor Bill Coder**) that run in your Cowork. |
+
+## Layout
+
+- **One plugin per industry.** Each plugin is a sibling directory (`ai-staff/`
+  for trades; future industries will be named `ai-staff-<industry>`) and is
+  listed in `.claude-plugin/marketplace.json`.
+- **Shared stubs.** The platform-mechanic stubs every industry plugin needs
+  (`review-work-items`, `configure-scheduled-task`, `agent-config`) live once in
+  `shared-stubs/`. `scripts/generate-shared-stubs.sh` copies them into every
+  `ai-staff*/` plugin directory; never edit the copies by hand.
+
+See [`PUBLISHING.md`](./PUBLISHING.md) for how to change a shared stub, add an
+industry plugin, and release.
 
 ## Dependencies
 

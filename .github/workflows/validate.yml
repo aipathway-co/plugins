@@ -23,14 +23,40 @@ jobs:
       # ANTHROPIC_API_KEY secret and pass it through as an env var.
       - name: Validate marketplace manifest
         run: claude plugin validate .
-      - name: Validate ai-staff plugin
-        run: claude plugin validate ./ai-staff
+      # Every plugin the marketplace lists, so a new ai-staff-* plugin is
+      # validated the moment it is added to marketplace.json.
+      - name: Validate every plugin in the marketplace
+        run: |
+          set -euo pipefail
+          DIRS=$(jq -r '[.plugins[].source | sub("^\\./"; "")] | unique | .[]' .claude-plugin/marketplace.json)
+          if [[ -z "$DIRS" ]]; then
+            echo "::error file=.claude-plugin/marketplace.json::no plugins listed in the marketplace."
+            exit 1
+          fi
+          FAILED=0
+          while IFS= read -r DIR; do
+            # Same naming rule release.yml enforces, so a bad name fails here,
+            # on the PR, instead of blocking every release after merge.
+            if [[ ! "$DIR" =~ ^ai-staff(-[a-z0-9]+)*$ ]]; then
+              echo "::error file=.claude-plugin/marketplace.json::plugin source '$DIR' must be ./ai-staff or ./ai-staff-<industry> (lowercase letters and digits, single hyphens)."
+              FAILED=1
+              continue
+            fi
+            echo "::group::$DIR"
+            claude plugin validate "./$DIR" || FAILED=1
+            echo "::endgroup::"
+          done <<< "$DIRS"
+          exit "$FAILED"
 
   version-bump:
     # A stub change that ships without a manifest bump is invisible to installs:
     # `/plugin update` compares versions, sees the same 0.1.0, and never
     # re-syncs. That happened with the review-work-items skill (#4), so the bump
-    # is a gate now, not a convention. Skipped on push (nothing to compare).
+    # is a gate now, not a convention. It covers every plugin the marketplace
+    # lists, so each plugin directory that changed needs its own bump; a plugin
+    # that is new on this branch needs none. All plugins are checked and every
+    # failure is reported before the job fails. Skipped on push (nothing to
+    # compare).
     name: Plugin version bumped
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -38,7 +64,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Require a bump when the plugin changed
+      - name: Require a bump when a plugin changed
         env:
           BASE: ${{ github.base_ref }}
         run: |
@@ -46,30 +72,94 @@ jobs:
           git fetch --no-tags origin "$BASE"
           MERGE_BASE=$(git merge-base "origin/$BASE" HEAD)
 
-          # Requirement 3: if the plugin itself did not change, no release is
-          # needed and this gate stays out of the way.
-          if git diff --quiet "$MERGE_BASE" HEAD -- ai-staff/; then
-            echo "ai-staff/ unchanged — no version bump required."
-            exit 0
-          fi
-
-          MANIFEST=ai-staff/.claude-plugin/plugin.json
-          OLD=$(git show "$MERGE_BASE:$MANIFEST" | jq -r .version)
-          NEW=$(jq -r .version "$MANIFEST")
-          echo "ai-staff: $OLD -> $NEW"
-
-          if [[ "$OLD" == "$NEW" ]]; then
-            echo "::error file=$MANIFEST::ai-staff/ changed but version is still $OLD. Bump it (semver) so installed copies pick the change up — see PUBLISHING.md."
+          DIRS=$(jq -r '[.plugins[].source | sub("^\\./"; "")] | unique | .[]' .claude-plugin/marketplace.json)
+          if [[ -z "$DIRS" ]]; then
+            echo "::error file=.claude-plugin/marketplace.json::no plugins listed in the marketplace."
             exit 1
           fi
 
-          # Guard against going backwards, which would also strand installs.
-          if [[ "$(printf '%s\n%s\n' "$OLD" "$NEW" | sort -V | tail -1)" != "$NEW" ]]; then
-            echo "::error file=$MANIFEST::version $NEW is not greater than $OLD."
-            exit 1
-          fi
+          FAILED=0
+          while IFS= read -r DIR; do
+            if [[ ! "$DIR" =~ ^ai-staff(-[a-z0-9]+)*$ ]]; then
+              echo "::error file=.claude-plugin/marketplace.json::plugin source '$DIR' must be ./ai-staff or ./ai-staff-<industry> (lowercase letters and digits, single hyphens)."
+              FAILED=1
+              continue
+            fi
 
-          if git rev-parse -q --verify "refs/tags/ai-staff-v$NEW" >/dev/null; then
-            echo "::error file=$MANIFEST::tag ai-staff-v$NEW already exists; pick an unused version."
+            # Requirement 3: if the plugin itself did not change, no release is
+            # needed and this gate stays out of the way.
+            if git diff --quiet "$MERGE_BASE" HEAD -- "$DIR/"; then
+              echo "$DIR/ unchanged — no version bump required."
+              continue
+            fi
+
+            MANIFEST="$DIR/.claude-plugin/plugin.json"
+            NEW=$(jq -r .version "$MANIFEST")
+            if [[ ! "$NEW" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error file=$MANIFEST::version '$NEW' is not X.Y.Z; release.yml would refuse it."
+              FAILED=1
+              continue
+            fi
+
+            # A plugin with no manifest at the merge base is new on this branch:
+            # there is no earlier version to bump from, but its first tag must
+            # still be unused.
+            if ! git cat-file -e "$MERGE_BASE:$MANIFEST" 2>/dev/null; then
+              echo "$DIR: new plugin at $NEW — no version bump required."
+              if git rev-parse -q --verify "refs/tags/$DIR-v$NEW" >/dev/null; then
+                echo "::error file=$MANIFEST::tag $DIR-v$NEW already exists; pick an unused version."
+                FAILED=1
+              fi
+              continue
+            fi
+
+            OLD=$(git show "$MERGE_BASE:$MANIFEST" | jq -r .version)
+            echo "$DIR: $OLD -> $NEW"
+
+            if [[ "$OLD" == "$NEW" ]]; then
+              echo "::error file=$MANIFEST::$DIR/ changed but version is still $OLD. Bump it (semver) so installed copies pick the change up — see PUBLISHING.md."
+              FAILED=1
+              continue
+            fi
+
+            # Guard against going backwards, which would also strand installs.
+            if [[ "$(printf '%s\n%s\n' "$OLD" "$NEW" | sort -V | tail -1)" != "$NEW" ]]; then
+              echo "::error file=$MANIFEST::version $NEW is not greater than $OLD."
+              FAILED=1
+              continue
+            fi
+
+            if git rev-parse -q --verify "refs/tags/$DIR-v$NEW" >/dev/null; then
+              echo "::error file=$MANIFEST::tag $DIR-v$NEW already exists; pick an unused version."
+              FAILED=1
+            fi
+          done <<< "$DIRS"
+          exit "$FAILED"
+
+  shared-stubs:
+    # The platform-mechanics skill stubs (review-work-items,
+    # configure-scheduled-task, agent-config) have one source of truth,
+    # shared-stubs/, and are copied into every ai-staff*/skills/ by a script.
+    # Hand-edited or stale copies would silently diverge between plugins, so
+    # regenerate in CI and fail if that changes (or adds) anything. Any ai-staff/
+    # change this produces is then caught by the version-bump gate above.
+    name: Shared stubs are generated
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate and require no diff
+        run: |
+          set -euo pipefail
+          bash scripts/generate-shared-stubs.sh
+
+          # Unscoped on purpose: CI starts from a clean checkout, so any output
+          # at all means the generator changed a copy or created a new one.
+          # Captured first so a failing git aborts the job under set -e.
+          STATUS=$(git status --porcelain)
+          if [[ -n "$STATUS" ]]; then
+            printf '%s\n' "$STATUS"
+            git diff
+            echo "::error::Generated skill stubs are out of date. Edit shared-stubs/<name>/SKILL.md (not the copies under ai-staff*/skills/ — move any hand edit there first), run scripts/generate-shared-stubs.sh, git add the source and every copy (including new ones), and bump the version of each plugin whose directory changed."
             exit 1
           fi
+          echo "Shared stubs are up to date."
