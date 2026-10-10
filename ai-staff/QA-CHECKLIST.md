@@ -73,7 +73,11 @@ Record the result (pass / fail / n-a) and the plugin version next to each run.
 - [ ] First session: confirms the QuickBooks company, brings the old settings over as
       teach cards (nothing saved until confirmed), lists rules it could not bring over
       in plain words.
-- [ ] "What does Vinnie know?" answers from `get_knowledge`, grouped by supplier and job.
+- [ ] "What does Vinnie know?" answers from `get_knowledge`, grouped by supplier and job,
+      with rules of thumb listed last.
+- [ ] A rule stated in words ("flag damage waivers on rentals") is read back and saved
+      only on a clear yes; a transcript or notes become teach cards, nothing saved until
+      each card is answered.
 
 ## `/review-work-items`
 - [ ] Shows three groups with exact counts; invoices show title, amount, summary only.
@@ -84,6 +88,10 @@ Record the result (pass / fail / n-a) and the plugin version next to each run.
 - [ ] Execution starts with `claim_execution`; a second chat trying the same bill is told
       another chat already started it.
 - [ ] `next: "recode"` brings the invoice back updated before it can be accepted.
+- [ ] A suggestion Vinnie is unsure about is labeled "Best guess" in the chat and on the
+      review screen; its alternatives are offered.
+- [ ] Approving a best guess reports what Vinnie learned in one plain line; "yes to all"
+      on five or more does not.
 
 ## `cfo-financial-analysis`
 

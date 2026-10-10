@@ -12,9 +12,12 @@ reinstalling anything.
 ## What's included
 - **`ai-staff:vinnie-vendor-bill-coder`** — reads supplier invoices from your AP
   inbox and suggests a correctly coded QuickBooks bill for each (right vendor,
-  job, cost account, class). Nothing is added until a person says yes.
+  job, cost account, class). Nothing is added until a person says yes. When he
+  is not sure he says so: those suggestions are labeled "Best guess", and
+  approving one teaches him.
 - **`ai-staff:teach-vinnie`** — set Vinnie up and teach him how your company
-  codes bills (suppliers, jobs, accounts); ask what he knows.
+  codes bills (suppliers, jobs, accounts), including rules of thumb Vinnie
+  applies with judgment; ask what he knows.
 - **`ai-staff:agent-config`** — how an agent operates: on/off, practice mode,
   mailbox, QuickBooks company, summary delivery. Never vendors or jobs.
 - **`ai-staff:configure-scheduled-task`** — put an agent on a recurring schedule so
@@ -59,6 +62,7 @@ you they can't run — by design.
 ## Safety model
 - **Nothing is added without a yes** — every bill is a suggestion a person
   accepts, rejects or corrects.
+- **Best guesses are labeled** — and never added without a yes.
 - **Practice mode by default** — no agent writes to QuickBooks or sends email
   until you deliberately turn practice mode off.
 - **Fail closed** — if an agent can't load its method or verify entitlement, it
