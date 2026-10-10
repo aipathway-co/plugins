@@ -4,7 +4,9 @@ description: >
   Set Vinnie up for this company and teach him how it codes supplier bills —
   which QuickBooks vendor and account each supplier uses, which job a ship-to,
   PO or account number belongs to, which PO words are just crew shorthand,
-  which senders never send invoices. Also answers "what does Vinnie know?".
+  which senders never send invoices, and rules of thumb he applies with
+  judgment (for example: mention rental add-ons, ask before suggesting a bill
+  whose PO is a placeholder). Also answers "what does Vinnie know?".
   Use for "set up Vinnie", "teach Vinnie", "Vinnie, learn from what we
   entered", "this invoice goes to …, remember that", "what does Vinnie know".
 triggers:
@@ -14,6 +16,8 @@ triggers:
   - "vinnie learn from"
   - "what does vinnie know"
   - "show vinnie an invoice"
+  - "teach vinnie a rule"
+  - "vinnie walkthrough"
 ---
 
 # Teach Vinnie (stub)
