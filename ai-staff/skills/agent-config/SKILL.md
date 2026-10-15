@@ -41,8 +41,18 @@ Call **`get_agent_settings`** with the `agent_key`. Show, in plain words:
 - how many days back it looks (`lookbackDays`) and where its summary goes
   (`summaryDelivery`, `summaryEmail`)
 
-If it returns `configured: false`, the agent was never set up: offer `teach-vinnie`, which
+If it returns `configured: false` for Vinnie, he was never set up: offer `teach-vinnie`, which
 sets these up first and then teaches.
+
+**Tina (`tina-timecard-validator`) has different settings and no teaching.** Show
+her state (`state`, California only for now), time zone (`timeZone`, a name like
+America/Los_Angeles), the day her work week starts (`workweekStartsOn`), when her
+workday starts (`workdayStartsAt`, midnight if not set), and where her summary goes
+(`summaryDelivery`, `summaryEmail`). The first four are set once and then locked;
+read them back and confirm before saving. In practice mode Tina prints her
+summary and never emails it; taking her out of practice mode means her weekly
+summary is emailed to `summaryEmail`, on scheduled runs too. She never changes a
+timecard. Her timecard database is connected by AI Pathway, not here.
 
 ## Step 2 — Change only what they asked
 
@@ -50,7 +60,8 @@ Call **`update_agent_settings`** with only the fields being changed:
 `enabled`, `dry_run`, `email_connections` (ids from
 `available_email_connections` — never guessed), and `settings`
 (`lookbackDays`, `summaryDelivery`, `summaryEmail`, `expectedCompanyName`,
-`expectedRealmId`).
+`expectedRealmId`; for Tina `state`, `timeZone`, `workweekStartsOn`,
+`workdayStartsAt`, `summaryDelivery`, `summaryEmail`).
 
 - **Practice mode off** or **turning the agent on** means real changes in
   QuickBooks once a person accepts a suggestion. Confirm that is intended.
