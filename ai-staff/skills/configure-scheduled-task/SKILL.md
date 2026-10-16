@@ -56,6 +56,11 @@ anyway. A missing tool means no schedule — never a hand-rolled one.
   work items, not a lock on the accounting tools. Never promise a guarantee the
   system cannot keep.
 
+**Tina (`tina-timecard-validator`)** checks the two work weeks just ended, so
+suggest once a week, early on the first day of the new work week, before payroll.
+Unlike other agents, her scheduled run emails the summary when `summaryDelivery`
+is `email` and practice mode is off: say so before creating the task.
+
 ## Step 3 — Check for an existing schedule FIRST
 
 Call **`list_scheduled_tasks`** and look for the `taskId` Mission Control returned.
