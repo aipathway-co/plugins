@@ -34,8 +34,8 @@ or "Vinnie"). If the user named no agent, go to **Check mode** below.
 
 ## Step 1 — Resolve the agent and ask Mission Control
 
-- Map the name to an `agent_key` ("Vinnie" → `vinnie-vendor-bill-coder`). If it is
-  ambiguous, call `list_agents` and ask which one.
+- Map the name to an `agent_key` ("Vinnie" → `vinnie-vendor-bill-coder`, "Dana" →
+  `dana-deposit-matcher`). If it is ambiguous, call `list_agents` and ask which one.
 - Call **`get_scheduled_task`** with that `agent_key`.
 
 **If `get_scheduled_task` does not exist or is unavailable — STOP.** Report that
@@ -48,7 +48,7 @@ anyway. A missing tool means no schedule — never a hand-rolled one.
 - **`ok: false`** — the agent cannot usefully run on a schedule yet. Present each
   blocker's `message` and `fix` in plain language and hand off: settings
   problems (off, no mailbox, no QuickBooks company) to `/agent-config`; an agent
-  that has not been taught yet to `teach-vinnie`.
+  that has not been taught yet to its teach skill (`teach-vinnie`, `teach-dana`).
   **Create nothing.** A task that fires at 8am and does nothing is worse than no task.
 - **`ok: true`** — present any `warnings` and get an explicit yes before continuing.
   On `dry_run`, say **"the method is intended not to perform external writes"** —
@@ -60,6 +60,11 @@ anyway. A missing tool means no schedule — never a hand-rolled one.
 suggest once a week, early on the first day of the new work week, before payroll.
 Unlike other agents, her scheduled run emails the summary when `summaryDelivery`
 is `email` and practice mode is off: say so before creating the task.
+
+**Dana (`dana-deposit-matcher`)** reads the bank deposits of the last
+`lookbackDays` days, so suggest once a day, early in the morning. Her scheduled
+run never records a payment: it suggests them, and a payment is recorded in
+QuickBooks only when a person accepts it in chat (`/review-work-items`).
 
 ## Step 3 — Check for an existing schedule FIRST
 
@@ -123,4 +128,4 @@ time is what applies, not what it said today.
 - Never invent a task id, a cron the user did not agree to, or a schedule for an
   agent you could not resolve.
 - You schedule agents here; you do not run them and you do not configure them
-  (settings are `/agent-config`; knowledge is `teach-vinnie`).
+  (settings are `/agent-config`; knowledge is `teach-vinnie` / `teach-dana`).

@@ -1,7 +1,8 @@
 # AI Staff
 
 Named back-office agents from [AI Pathway](https://aipathway.co) that run inside
-your own Cowork — starting with **Vinnie the Vendor Bill Coder**.
+your own Cowork — **Vinnie the Vendor Bill Coder**, **Tina the Timecard
+Validator** and **Dana the Deposit Matcher**.
 
 Each agent in this plugin is intentionally **thin**: a discovery stub that, at run
 time, fetches its authoritative and versioned procedure from the **Mission
@@ -18,6 +19,14 @@ reinstalling anything.
 - **`ai-staff:teach-vinnie`** — set Vinnie up and teach him how your company
   codes bills (suppliers, jobs, accounts), including rules of thumb Vinnie
   applies with judgment; ask what he knows.
+- **`ai-staff:tina-timecard-validator`** — checks the timecards for the two work
+  weeks just ended, before payroll, and reports what to fix. She changes nothing.
+- **`ai-staff:dana-deposit-matcher`** — matches money that arrived in your bank
+  accounts to customer invoices and suggests recording each customer payment in
+  QuickBooks. Nothing is recorded until a person says yes.
+- **`ai-staff:teach-dana`** — set Dana up and teach her how your customers' payments
+  arrive (which bank account deposits into which QuickBooks account, who a deposit
+  is from, which deposits are not customer money); ask what she knows.
 - **`ai-staff:agent-config`** — how an agent operates: on/off, practice mode,
   mailbox, QuickBooks company, summary delivery. Never vendors or jobs.
 - **`ai-staff:configure-scheduled-task`** — put an agent on a recurring schedule so
