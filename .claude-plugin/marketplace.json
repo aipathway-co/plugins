@@ -9,7 +9,7 @@
     {
       "name": "ai-staff",
       "source": "./ai-staff",
-      "description": "AI Pathway AI Staff — named back-office agents (starting with Vinnie the Vendor Bill Coder) that run in your Cowork. Requires the Mission Control and QuickBooks connectors."
+      "description": "AI Pathway AI Staff — named back-office agents (Vinnie the Vendor Bill Coder, Tina the Timecard Validator and Dana the Deposit Matcher) that run in your Cowork. Requires the Mission Control and QuickBooks connectors."
     }
   ]
 }

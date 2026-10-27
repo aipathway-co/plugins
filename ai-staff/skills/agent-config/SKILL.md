@@ -7,7 +7,7 @@ description: >
   and where its run summary goes. Use for "turn Vinnie on", "take Vinnie out of
   practice mode", "change Vinnie's mailbox", "what are Vinnie's settings".
   NOT for vendors, jobs, accounts, classes or senders — those are TAUGHT, not
-  configured: use teach-vinnie.
+  configured: use teach-vinnie (or teach-dana for Dana).
 triggers:
   - "agent settings"
   - "turn <agent> on"
@@ -22,9 +22,9 @@ triggers:
 
 Settings say how an agent **operates**. They never say how the company **codes
 bills**. Anything that names a supplier, account, class, job, PO, ship-to or
-sender is knowledge: the agent learns it from a person through `teach-vinnie`
-and through the bookkeeper's answers and corrections. Mission Control refuses
-those keys here; do not try to put them in.
+sender is knowledge: the agent learns it from a person through its teach skill
+(`teach-vinnie`, `teach-dana`) and through the bookkeeper's answers and
+corrections. Mission Control refuses those keys here; do not try to put them in.
 
 **Input:** the agent, by key or name ("Vinnie" → `vinnie-vendor-bill-coder`).
 If none was named or it is ambiguous, call `list_agents` and ask.
@@ -42,7 +42,12 @@ Call **`get_agent_settings`** with the `agent_key`. Show, in plain words:
   (`summaryDelivery`, `summaryEmail`)
 
 If it returns `configured: false` for Vinnie, he was never set up: offer `teach-vinnie`, which
-sets these up first and then teaches.
+sets these up first and then teaches. The same goes for Dana with `teach-dana`.
+
+**Dana (`dana-deposit-matcher`) has Vinnie's settings.** `lookbackDays` is how
+many days of bank deposits she reads. Her mailbox is optional: when one is bound
+she reads customers' remittance emails to see what a deposit pays. Connecting
+a bank account is not a setting here.
 
 **Tina (`tina-timecard-validator`) has different settings and no teaching.** Show
 her state (`state`, California only for now), time zone (`timeZone`, a name like
@@ -69,7 +74,7 @@ Call **`update_agent_settings`** with only the fields being changed:
   refuses a change to it, say so plainly: moving an agent to a different
   QuickBooks company is done by AI Pathway, not here.
 - If Mission Control refuses a key because it is knowledge (a vendor, job,
-  account…), explain that and offer `teach-vinnie`.
+  account…), explain that and offer `teach-vinnie` (or `teach-dana` for Dana).
 
 ## Step 3 — Confirm
 
@@ -78,5 +83,5 @@ the person knows whether anything can be added to QuickBooks.
 
 ## Guardrails
 - Never invent a value or an id. Ask.
-- You do not teach, run or schedule agents here (`teach-vinnie`, "run vinnie",
-  `/configure-scheduled-task`).
+- You do not teach, run or schedule agents here (`teach-vinnie`, `teach-dana`,
+  "run vinnie", "run dana", `/configure-scheduled-task`).

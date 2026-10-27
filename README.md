@@ -12,7 +12,7 @@ it in Claude Code or Cowork and install the plugins below.
 
 | Plugin | What it is |
 |--------|------------|
-| **[`ai-staff`](./ai-staff)** | Named back-office agents (starting with **Vinnie the Vendor Bill Coder**) that run in your Cowork. |
+| **[`ai-staff`](./ai-staff)** | Named back-office agents (**Vinnie the Vendor Bill Coder**, **Tina the Timecard Validator** and **Dana the Deposit Matcher**) that run in your Cowork. |
 
 ## Dependencies
 
